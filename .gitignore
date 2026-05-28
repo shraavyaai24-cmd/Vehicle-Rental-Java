@@ -1,0 +1,7 @@
+# Java build output
+bin/
+
+# OS / editor
+.vscode/
+*.class
+
