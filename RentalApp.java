@@ -36,15 +36,15 @@ public class RentalApp {
     private static List<Vehicle> fleet = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
-        // Initialize the default fleet exactly as you had them
-        fleet.add(new Vehicle("C001", "Tesla Model 3", 75.0));
-        fleet.add(new Vehicle("C002", "Toyota RAV4 (SUV)", 55.0));
-        fleet.add(new Vehicle("C003", "Honda Civic (Economy)", 40.0));
-        fleet.add(new Vehicle("C004", "Ford Mustang (Sport)", 90.0));
-        fleet.add(new Vehicle("C005", "BMW X5 (Luxury SUV)", 120.0));
-        fleet.add(new Vehicle("S001", "Vespa Primavera Scooter", 25.0));
-        fleet.add(new Vehicle("S002", "Yamaha NMAX Scooter", 30.0));
-        fleet.add(new Vehicle("B001", "Specialized E-Bike", 15.0));
+        // Initialize the default fleet with localized Rupee daily rates
+        fleet.add(new Vehicle("C001", "Tesla Model 3", 6000.0));
+        fleet.add(new Vehicle("C002", "Toyota RAV4 (SUV)", 4500.0));
+        fleet.add(new Vehicle("C003", "Honda Civic (Economy)", 3000.0));
+        fleet.add(new Vehicle("C004", "Ford Mustang (Sport)", 8000.0));
+        fleet.add(new Vehicle("C005", "BMW X5 (Luxury SUV)", 10000.0));
+        fleet.add(new Vehicle("S001", "Vespa Primavera Scooter", 800.0));
+        fleet.add(new Vehicle("S002", "Yamaha NMAX Scooter", 1200.0));
+        fleet.add(new Vehicle("B001", "Specialized E-Bike", 500.0));
 
         // Render sets a PORT environment variable dynamically. Default to 8080.
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
@@ -92,7 +92,7 @@ public class RentalApp {
                             v.rentalStart = "Just Now";
                             v.payment = "PENDING";
                             v.dues = v.rate;
-                            alertMessage = "<div class='alert alert-warning alert-dismissible fade show' role='alert'><strong>Reserved!</strong> " + v.model + " rented with pending payment of $" + v.dues + ".<button type='button' class='btn-close' data-bs-dismiss='alert'></button></div>";
+                            alertMessage = "<div class='alert alert-warning alert-dismissible fade show' role='alert'><strong>Reserved!</strong> " + v.model + " rented with pending payment of ₹" + v.dues + ".<button type='button' class='btn-close' data-bs-dismiss='alert'></button></div>";
                         } else if (action.equals("return")) {
                             v.status = "AVAILABLE";
                             v.rentalStart = "N/A";
@@ -155,7 +155,7 @@ public class RentalApp {
                 .append("        </div>")
                 .append("        <div class='col-md-4'>")
                 .append("            <div class='card card-shadow bg-white p-3 d-flex flex-row align-items-center justify-content-between'>")
-                .append("                <div><h6 class='text-muted mb-1'>Pending Payments</h6><h3 class='fw-bold mb-0 text-danger'>$")
+                .append("                <div><h6 class='text-muted mb-1'>Pending Payments</h6><h3 class='fw-bold mb-0 text-danger'>₹")
                 .append(fleet.stream().mapToDouble(v -> v.dues).sum()).append("</h3></div>")
                 .append("                <div class='fs-1 text-danger'><i class='bi bi-cash-coin'></i></div>")
                 .append("            </div>")
@@ -192,11 +192,11 @@ public class RentalApp {
                 html.append("                    <tr>")
                     .append("                        <td><span class='fw-bold text-secondary'>").append(v.id).append("</span></td>")
                     .append("                        <td><span class='fw-semibold text-dark'>").append(v.model).append("</span></td>")
-                    .append("                        <td>$").append(v.rate).append("</td>")
+                    .append("                        <td>₹").append(v.rate).append("</td>")
                     .append("                        <td><span class='badge ").append(badgeClass).append(" px-2.5 py-1.5'>").append(v.status).append("</span></td>")
                     .append("                        <td class='text-muted small'>").append(v.rentalStart).append("</td>")
                     .append("                        <td><span class='badge rounded-pill ").append(paymentBadge).append("'>").append(v.payment).append("</span></td>")
-                    .append("                        <td class='fw-bold ").append(v.dues > 0 ? "text-danger" : "text-dark").append("'>$").append(v.dues).append("</td>")
+                    .append("                        <td class='fw-bold ").append(v.dues > 0 ? "text-danger" : "text-dark").append("'>₹").append(v.dues).append("</td>")
                     .append("                        <td class='text-end'>");
                 
                 if (v.status.equals("AVAILABLE")) {
@@ -221,7 +221,7 @@ public class RentalApp {
                 .append("</body>")
                 .append("</html>");
 
-            // Send HTML standard response back over HTTP
+            // Send HTML standard response back over HTTP using UTF-8 to display the Rupee symbol correctly
             byte[] responseBytes = html.toString().getBytes("UTF-8");
             exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
             exchange.sendResponseHeaders(200, responseBytes.length);
