@@ -1,3 +1,4 @@
+# Use a modern, officially maintained Java runtime environment
 FROM eclipse-temurin:17-jdk
 
 # Set the working directory inside the container
