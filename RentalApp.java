@@ -123,7 +123,7 @@ public class RentalApp {
                                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                         + "</div>";
                             } 
-                            // New Backend Policy Check: Boundary Validation for 1 to 10 days constraint
+                            // Backend Policy Check: Boundary Validation for 1 to 10 days constraint
                             else if (daysInput < 1 || daysInput > 10) {
                                 alertMessage = "<div class='alert alert-danger d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                         + "    <i class='bi bi-shield-slash-fill me-2 fs-5'></i>"
@@ -147,10 +147,12 @@ public class RentalApp {
                                             + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                             + "</div>";
                                 } else {
-                                    currentUser.dues = totalCost; 
+                                    // Pay Later Option: 10% Deposit calculated and charged immediately
+                                    double depositAmount = totalCost * 0.10;
+                                    currentUser.dues = depositAmount; 
                                     alertMessage = "<div class='alert alert-warning d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                             + "    <i class='bi bi-exclamation-triangle-fill me-2 fs-5'></i>"
-                                            + "    <div><strong>Notice:</strong> " + v.model + " booked for <strong>" + v.rentedDays + " days</strong>. Liability invoice of ₹" + totalCost + " assigned.</div>"
+                                            + "    <div><strong>Notice:</strong> " + v.model + " booked for <strong>" + v.rentedDays + " days</strong>. A 10% structural deposit of ₹" + depositAmount + " (Total Rent: ₹" + totalCost + ") has been charged to your account.</div>"
                                             + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                             + "</div>";
                                 }
@@ -224,6 +226,20 @@ public class RentalApp {
                 .append("            <div class='card card-shadow bg-white p-3 d-flex flex-row align-items-center justify-content-between'>")
                 .append("                <div><h6 class='text-muted small mb-1'>Current Profile Liability Balance</h6><h3 class='fw-bold mb-0 text-danger'>₹").append(currentUser.dues).append("</h3></div>")
                 .append("                <div>").append(currentUser.dues > 0 ? "<a href='/?action=clear_dues' class='btn btn-success btn-sm fw-bold'><i class='bi bi-currency-rupee me-1'></i> Clear Debt Now</a>" : "").append("</div>")
+                .append("            </div>")
+                .append("        </div>")
+                .append("    </div>")
+
+                // Operator System Notice Note Card
+                .append("    <div class='card card-shadow bg-light border-start border-warning border-3 p-3 mb-4'>")
+                .append("        <div class='d-flex'>")
+                .append("            <div class='text-warning me-3'><i class='bi bi-journal-text fs-3'></i></div>")
+                .append("            <div>")
+                .append("                <h6 class='fw-bold text-dark mb-1'>SYSTEM POLICY NOTE FOR OPERATORS</h6>")
+                .append("                <p class='text-muted small mb-0'>")
+                .append("                    Attention Operator: When processing vehicle selections, the system calculates the <strong>Total Rent</strong> based on the formula: <em>Rent per day × Number of days</em>.<br>")
+                .append("                    Selecting <strong>'Rent Now'</strong> registers immediate settlement. Selecting <strong>'Pay Later'</strong> triggers a deferred billing model, requiring an upfront security deposit equivalent to <strong>10% of the total calculated rent</strong> added to liabilities.")
+                .append("                </p>")
                 .append("            </div>")
                 .append("        </div>")
                 .append("    </div>")
