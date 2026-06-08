@@ -241,4 +241,52 @@ public class RentalApp {
             for (Vehicle v : fleet) {
                 String badgeClass = v.status.equals("AVAILABLE") ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger";
                 String renterText = v.rentedByUserId.equals(currentUser.id) ? "You" : (v.rentedByUserId.equals("NONE") ? "N/A" : v.rentedByUserId);
-                String duration
+                String durationText = v.status.equals("RENTED") ? v.rentedDays + " Days" : "—";
+                
+                html.append("                    <tr>")
+                    .append("                        <td><span class='fw-bold text-secondary'>").append(v.id).append("</span></td>")
+                    .append("                        <td><span class='fw-semibold text-dark'>").append(v.model).append("</span></td>")
+                    .append("                        <td>₹").append(v.rate).append("/day</td>")
+                    .append("                        <td><span class='badge ").append(badgeClass).append(" px-2.5 py-1.5'>").append(v.status).append("</span></td>")
+                    .append("                        <td class='fw-semibold text-dark'>").append(durationText).append("</td>")
+                    .append("                        <td class='text-muted small'>").append(renterText).append("</td>")
+                    .append("                        <td class='text-end'>");
+                
+                if (v.status.equals("AVAILABLE")) {
+                    if (currentUser.dues > 0) {
+                        html.append("                            <button class='btn btn-sm btn-secondary opacity-50 me-1' disabled><i class='bi bi-lock-fill me-1'></i> Locked</button>");
+                    } else {
+                        // Dropdown selection loop: Iterates sequentially from 1 to 10 (covering both odd and even numbers)
+                        html.append("                            <div class='d-inline-block me-2 align-middle'>")
+                            .append("                                <select id='days-").append(v.id).append("' class='form-select form-select-sm' style='width: 95px;'>");
+                        
+                        for (int i = 1; i <= 10; i++) {
+                            html.append("                                    <option value='").append(i).append("'>").append(i).append(i == 1 ? " Day" : " Days").append("</option>");
+                        }
+                        
+                        html.append("                                </select>")
+                            .append("                            </div>")
+                            .append("                            <button onclick=\"processRental('rent_now', '").append(v.id).append("')\" class='btn btn-sm btn-primary me-1'><i class='bi bi-wallet2 me-1'></i> Rent Now</button>")
+                            .append("                            <button onclick=\"processRental('rent_later', '").append(v.id).append("')\" class='btn btn-sm btn-outline-secondary'><i class='bi bi-clock-history me-1'></i> Pay Later</button>");
+                    }
+                } else if (v.rentedByUserId.equals(currentUser.id)) {
+                    html.append("                            <a href='/?action=return&id=").append(v.id).append("' class='btn btn-sm btn-danger'><i class='bi bi-arrow-left-right me-1'></i> Terminate & Return</a>");
+                } else {
+                    html.append("                            <button class='btn btn-sm btn-light text-muted' disabled>Occupied</button>");
+                }
+                html.append("                        </td></tr>");
+            }
+
+            html.append("                </tbody></table></div></div></div>")
+                .append("<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>")
+                .append("</body></html>");
+
+            byte[] responseBytes = html.toString().getBytes("UTF-8");
+            exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+            exchange.sendResponseHeaders(200, responseBytes.length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(responseBytes);
+            os.close();
+        }
+    }
+}
