@@ -69,7 +69,7 @@ public class RentalApp {
         
         server.createContext("/", new DashboardHandler());
         server.setExecutor(null);
-        System.out.println("Rental Application with Variable Days running on port: " + port);
+        System.out.println("Rental Application with 1-10 Day Limits operating on port: " + port);
         server.start();
     }
 
@@ -114,34 +114,43 @@ public class RentalApp {
                 for (Vehicle v : fleet) {
                     if (v.id.equals(vehicleId)) {
                         
-                        // Check for dues first
                         if (action.equals("rent_now") || action.equals("rent_later")) {
+                            // Backend Guard Check: Validate outstanding balances
                             if (currentUser.dues > 0) {
                                 alertMessage = "<div class='alert alert-danger d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                         + "    <i class='bi bi-exclamation-octagon-fill me-2 fs-5'></i>"
-                                        + "    <div><strong>Transaction Blocked!</strong> Clear your current balance of ₹" + currentUser.dues + " before opening a new booking.</div>"
+                                        + "    <div><strong>Transaction Blocked!</strong> Clear your current balance of ₹" + currentUser.dues + " before making another booking.</div>"
                                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                         + "</div>";
-                            } else {
+                            } 
+                            // New Backend Policy Check: Boundary Validation for 1 to 10 days constraint
+                            else if (daysInput < 1 || daysInput > 10) {
+                                alertMessage = "<div class='alert alert-danger d-flex align-items-center alert-dismissible fade show' role='alert'>"
+                                        + "    <i class='bi bi-shield-slash-fill me-2 fs-5'></i>"
+                                        + "    <div><strong>Invalid Input Policy!</strong> Rental timeline allocations are constrained between 1 to 10 days only.</div>"
+                                        + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
+                                        + "</div>";
+                            } 
+                            // Proceed with valid booking parameters
+                            else {
                                 v.status = "RENTED";
                                 v.rentedByUserId = currentUser.id;
-                                v.rentedDays = daysInput; // Save days parameter
+                                v.rentedDays = daysInput; 
                                 
-                                // Calculate total cost based on duration input: (Rate * Days)
                                 double totalCost = v.rate * v.rentedDays;
                                 
                                 if (action.equals("rent_now")) {
                                     currentUser.dues = 0.0;
                                     alertMessage = "<div class='alert alert-success d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                             + "    <i class='bi bi-check-circle-fill me-2 fs-5'></i>"
-                                            + "    <div><strong>Success!</strong> Renting " + v.model + " for <strong>" + v.rentedDays + " days</strong>. Total of ₹" + totalCost + " paid upfront.</div>"
+                                            + "    <div><strong>Success!</strong> Rented " + v.model + " for <strong>" + v.rentedDays + " days</strong>. Paid Upfront: ₹" + totalCost + ".</div>"
                                             + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                             + "</div>";
                                 } else {
-                                    currentUser.dues = totalCost; // Add accumulated total cost to dues
+                                    currentUser.dues = totalCost; 
                                     alertMessage = "<div class='alert alert-warning d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                             + "    <i class='bi bi-exclamation-triangle-fill me-2 fs-5'></i>"
-                                            + "    <div><strong>Notice:</strong> " + v.model + " checked out for <strong>" + v.rentedDays + " days</strong>. Bill amount of ₹" + totalCost + " added to account.</div>"
+                                            + "    <div><strong>Notice:</strong> " + v.model + " booked for <strong>" + v.rentedDays + " days</strong>. Liability invoice of ₹" + totalCost + " assigned.</div>"
                                             + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                             + "</div>";
                                 }
@@ -156,7 +165,7 @@ public class RentalApp {
                                 v.rentedDays = 0;
                                 alertMessage = "<div class='alert alert-info d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                         + "    <i class='bi bi-info-circle-fill me-2 fs-5'></i>"
-                                        + "    <div><strong>Vehicle Returned:</strong> " + v.model + " is safely back in the directory. Please settle any remaining dues.</div>"
+                                        + "    <div><strong>Vehicle Returned:</strong> " + v.model + " checked into processing base. Please settle any remaining dues.</div>"
                                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                         + "</div>";
                             }
@@ -171,7 +180,7 @@ public class RentalApp {
                 currentUser.dues = 0.0;
                 alertMessage = "<div class='alert alert-success d-flex align-items-center alert-dismissible fade show' role='alert'>"
                         + "    <i class='bi bi-shield-check me-2 fs-5'></i>"
-                        + "    <div><strong>Account Settled!</strong> Outstanding dues cleared. Your system block has been lifted.</div>"
+                        + "    <div><strong>Account Settled!</strong> Outstanding balances resolved. Access blocks deactivated.</div>"
                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                         + "</div>";
             }
@@ -184,7 +193,6 @@ public class RentalApp {
                 .append("<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>")
                 .append("<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css'>")
                 .append("<style>body { background-color: #f4f6f9; font-family: 'Segoe UI', system-ui, sans-serif; } .card-shadow { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05); border: none; border-radius: 12px; }</style>")
-                // Add frontend JavaScript function to read dropdown value and inject it dynamically into our request link URL
                 .append("<script>")
                 .append("function processRental(action, vehicleId) {")
                 .append("    var selectEl = document.getElementById('days-' + vehicleId);")
@@ -233,52 +241,4 @@ public class RentalApp {
             for (Vehicle v : fleet) {
                 String badgeClass = v.status.equals("AVAILABLE") ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger";
                 String renterText = v.rentedByUserId.equals(currentUser.id) ? "You" : (v.rentedByUserId.equals("NONE") ? "N/A" : v.rentedByUserId);
-                String durationText = v.status.equals("RENTED") ? v.rentedDays + " Days" : "—";
-                
-                html.append("                    <tr>")
-                    .append("                        <td><span class='fw-bold text-secondary'>").append(v.id).append("</span></td>")
-                    .append("                        <td><span class='fw-semibold text-dark'>").append(v.model).append("</span></td>")
-                    .append("                        <td>₹").append(v.rate).append("/day</td>")
-                    .append("                        <td><span class='badge ").append(badgeClass).append(" px-2.5 py-1.5'>").append(v.status).append("</span></td>")
-                    .append("                        <td class='fw-semibold text-dark'>").append(durationText).append("</td>")
-                    .append("                        <td class='text-muted small'>").append(renterText).append("</td>")
-                    .append("                        <td class='text-end'>");
-                
-                if (v.status.equals("AVAILABLE")) {
-                    if (currentUser.dues > 0) {
-                        html.append("                            <button class='btn btn-sm btn-secondary opacity-50 me-1' disabled><i class='bi bi-lock-fill me-1'></i> Locked</button>");
-                    } else {
-                        // Dropdown selection input module for duration inside table cell
-                        html.append("                            <div class='d-inline-block me-2 align-middle'>")
-                            .append("                                <select id='days-").append(v.id).append("' class='form-select form-select-sm' style='width: 90px;'>")
-                            .append("                                    <option value='1'>1 Day</option>")
-                            .append("                                    <option value='3'>3 Days</option>")
-                            .append("                                    <option value='5'>5 Days</option>")
-                            .append("                                    <option value='7'>7 Days</option>")
-                            .append("                                </select>")
-                            .append("                            </div>")
-                            // Execute custom JavaScript handler on click to cleanly stitch parameters together
-                            .append("                            <button onclick=\"processRental('rent_now', '").append(v.id).append("')\" class='btn btn-sm btn-primary me-1'><i class='bi bi-wallet2 me-1'></i> Rent Now</button>")
-                            .append("                            <button onclick=\"processRental('rent_later', '").append(v.id).append("')\" class='btn btn-sm btn-outline-secondary'><i class='bi bi-clock-history me-1'></i> Pay Later</button>");
-                    }
-                } else if (v.rentedByUserId.equals(currentUser.id)) {
-                    html.append("                            <a href='/?action=return&id=").append(v.id).append("' class='btn btn-sm btn-danger'><i class='bi bi-arrow-left-right me-1'></i> Terminate & Return</a>");
-                } else {
-                    html.append("                            <button class='btn btn-sm btn-light text-muted' disabled>Occupied</button>");
-                }
-                html.append("                        </td></tr>");
-            }
-
-            html.append("                </tbody></table></div></div></div>")
-                .append("<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js'></script>")
-                .append("</body></html>");
-
-            byte[] responseBytes = html.toString().getBytes("UTF-8");
-            exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-            exchange.sendResponseHeaders(200, responseBytes.length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(responseBytes);
-            os.close();
-        }
-    }
-}
+                String duration
