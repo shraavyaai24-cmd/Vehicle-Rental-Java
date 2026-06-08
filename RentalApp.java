@@ -19,7 +19,7 @@ public class RentalApp {
         double rate;
         String status;
         String rentedByUserId;
-        int rentedDays; // Tracks chosen rental duration
+        int rentedDays; 
 
         public Vehicle(String id, String model, double rate) {
             this.id = id;
@@ -69,7 +69,7 @@ public class RentalApp {
         
         server.createContext("/", new DashboardHandler());
         server.setExecutor(null);
-        System.out.println("Rental Application with 1-10 Day Limits operating on port: " + port);
+        System.out.println("Rental Application operating on port: " + port);
         server.start();
     }
 
@@ -92,7 +92,6 @@ public class RentalApp {
             String action = params.get("action");
             String vehicleId = params.get("id");
             
-            // Extract the user inputted days (Default to 1 if missing or invalid)
             int daysInput = 1;
             try {
                 if (params.containsKey("days")) {
@@ -104,7 +103,6 @@ public class RentalApp {
 
             String alertMessage = "";
 
-            // Query active user state
             User currentUser = users.stream()
                     .filter(u -> u.id.equals(CURRENT_LOGGED_IN_USER_ID))
                     .findFirst()
@@ -115,15 +113,13 @@ public class RentalApp {
                     if (v.id.equals(vehicleId)) {
                         
                         if (action.equals("rent_now") || action.equals("rent_later")) {
-                            // Backend Guard Check: Validate outstanding balances
                             if (currentUser.dues > 0) {
                                 alertMessage = "<div class='alert alert-danger d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                         + "    <i class='bi bi-exclamation-octagon-fill me-2 fs-5'></i>"
-                                        + "    <div><strong>Transaction Blocked!</strong> Clear your current balance of ₹" + currentUser.dues + " before making another booking.</div>"
+                                        + "    <div><strong>Transaction Blocked!</strong> Clear your total outstanding deposit of ₹" + currentUser.dues + " before making another booking.</div>"
                                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                         + "</div>";
                             } 
-                            // Backend Policy Check: Boundary Validation for 1 to 10 days constraint
                             else if (daysInput < 1 || daysInput > 10) {
                                 alertMessage = "<div class='alert alert-danger d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                         + "    <i class='bi bi-shield-slash-fill me-2 fs-5'></i>"
@@ -131,7 +127,6 @@ public class RentalApp {
                                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                         + "</div>";
                             } 
-                            // Proceed with valid booking parameters
                             else {
                                 v.status = "RENTED";
                                 v.rentedByUserId = currentUser.id;
@@ -143,31 +138,35 @@ public class RentalApp {
                                     currentUser.dues = 0.0;
                                     alertMessage = "<div class='alert alert-success d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                             + "    <i class='bi bi-check-circle-fill me-2 fs-5'></i>"
-                                            + "    <div><strong>Success!</strong> Rented " + v.model + " for <strong>" + v.rentedDays + " days</strong>. Paid Upfront: ₹" + totalCost + ".</div>"
+                                            + "    <div><strong>Booking Confirmed!</strong> Rented " + v.model + " for <strong>" + v.rentedDays + " days</strong>.<br>"
+                                            + "    <span class='badge bg-success mt-1 text-white fs-6'>Actual Payment Made Upfront: ₹" + totalCost + "</span> (Total Rent: ₹" + totalCost + ")</div>"
                                             + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                             + "</div>";
                                 } else {
-                                    // Pay Later Option: 10% Deposit calculated and charged immediately
                                     double depositAmount = totalCost * 0.10;
                                     currentUser.dues = depositAmount; 
                                     alertMessage = "<div class='alert alert-warning d-flex align-items-center alert-dismissible fade show' role='alert'>"
                                             + "    <i class='bi bi-exclamation-triangle-fill me-2 fs-5'></i>"
-                                            + "    <div><strong>Notice:</strong> " + v.model + " booked for <strong>" + v.rentedDays + " days</strong>. A 10% structural deposit of ₹" + depositAmount + " (Total Rent: ₹" + totalCost + ") has been charged to your account.</div>"
+                                            + "    <div><strong>Booking Switched to Deferred Scheme!</strong> " + v.model + " reserved for <strong>" + v.rentedDays + " days</strong>.<br>"
+                                            + "    <span class='badge bg-warning mt-1 text-dark fs-6'>Actual Upfront Deposit Charged: ₹" + depositAmount + "</span> (Total Expected Rent: ₹" + totalCost + ")</div>"
                                             + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                             + "</div>";
                                 }
                             }
                         } 
-                        
-                        // Handle Returns
                         else if (action.equals("return")) {
                             if (v.rentedByUserId.equals(currentUser.id)) {
                                 v.status = "AVAILABLE";
                                 v.rentedByUserId = "NONE";
                                 v.rentedDays = 0;
-                                alertMessage = "<div class='alert alert-info d-flex align-items-center alert-dismissible fade show' role='alert'>"
-                                        + "    <i class='bi bi-info-circle-fill me-2 fs-5'></i>"
-                                        + "    <div><strong>Vehicle Returned:</strong> " + v.model + " checked into processing base. Please settle any remaining dues.</div>"
+                                currentUser.dues = 0.0;
+                                
+                                alertMessage = "<div class='alert alert-info d-flex flex-column alert-dismissible fade show' role='alert'>"
+                                        + "    <div class='d-flex align-items-center'>"
+                                        + "        <i class='bi bi-arrow-left-right me-2 fs-5'></i>"
+                                        + "        <div><strong>Vehicle Returned:</strong> " + v.model + " successfully brought back to deployment grid.</div>"
+                                        + "    </div>"
+                                        + "    <div class='mt-2 ps-4 text-success fw-bold'><i class='bi bi-shield-check me-1'></i> Refund Notification: The 10% initial holding deposit has been fully returned and released to the operator file dashboard.</div>"
                                         + "    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>"
                                         + "</div>";
                             }
@@ -177,7 +176,6 @@ public class RentalApp {
                 }
             }
 
-            // Settle Account Balance
             if ("clear_dues".equals(action) && currentUser != null) {
                 currentUser.dues = 0.0;
                 alertMessage = "<div class='alert alert-success d-flex align-items-center alert-dismissible fade show' role='alert'>"
@@ -187,7 +185,15 @@ public class RentalApp {
                         + "</div>";
             }
 
-            // Render Output Document
+            // Calculate active total balance for display block
+            double activeTotalBalance = 0.0;
+            for (Vehicle v : fleet) {
+                if (v.rentedByUserId.equals(currentUser.id)) {
+                    activeTotalBalance = v.rate * v.rentedDays;
+                    break;
+                }
+            }
+
             StringBuilder html = new StringBuilder();
             html.append("<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'>")
                 .append("<meta name='viewport' content='width=device-width, initial-scale=1.0'>")
@@ -204,7 +210,6 @@ public class RentalApp {
                 .append("</script>")
                 .append("</head><body>");
                 
-                // Header Profiling Bar
                 html.append("<nav class='navbar navbar-expand-lg navbar-dark bg-dark py-3 mb-4 shadow-sm'>")
                 .append("    <div class='container'>")
                 .append("        <a class='navbar-brand fw-bold text-white' href='/'><i class='bi bi-car-front-fill me-2 text-warning'></i>VEHICLE MANAGEMENT APP</a>")
@@ -214,37 +219,41 @@ public class RentalApp {
                 
                 html.append("<div class='container'>").append(alertMessage)
 
-                // Financial Control Board Layout Widgets
+                // Financial Control Board - Three-Column Widget Layout
                 .append("    <div class='row g-3 mb-4'>")
-                .append("        <div class='col-md-6'>")
-                .append("            <div class='card card-shadow bg-white p-3 d-flex flex-row align-items-center justify-content-between'>")
+                .append("        <div class='col-md-4'>")
+                .append("            <div class='card card-shadow bg-white p-3 h-100 d-flex flex-row align-items-center justify-content-between'>")
                 .append("                <div><h6 class='text-muted small mb-1'>Rental Clearance Checks</h6>")
                 .append(currentUser.dues > 0 ? "<h4 class='fw-bold text-danger mb-0'><i class='bi bi-lock-fill me-1'></i> PROFILE SUSPENDED</h4>" : "<h4 class='fw-bold text-success mb-0'><i class='bi bi-unlock-fill me-1'></i> SYSTEM CLEAR</h4>").append("</div>")
                 .append("            </div>")
                 .append("        </div>")
-                .append("        <div class='col-md-6'>")
-                .append("            <div class='card card-shadow bg-white p-3 d-flex flex-row align-items-center justify-content-between'>")
-                .append("                <div><h6 class='text-muted small mb-1'>Current Profile Liability Balance</h6><h3 class='fw-bold mb-0 text-danger'>₹").append(currentUser.dues).append("</h3></div>")
-                .append("                <div>").append(currentUser.dues > 0 ? "<a href='/?action=clear_dues' class='btn btn-success btn-sm fw-bold'><i class='bi bi-currency-rupee me-1'></i> Clear Debt Now</a>" : "").append("</div>")
+                .append("        <div class='col-md-4'>")
+                .append("            <div class='card card-shadow bg-white p-3 h-100 d-flex flex-row align-items-center justify-content-between'>")
+                .append("                <div><h6 class='text-muted small mb-1'>Total Deposit</h6><h3 class='fw-bold mb-0 text-danger'>₹").append(currentUser.dues).append("</h3></div>")
+                .append("                <div>").append(currentUser.dues > 0 ? "<a href='/?action=clear_dues' class='btn btn-success btn-sm fw-bold'><i class='bi bi-currency-rupee me-1'></i> Clear</a>" : "").append("</div>")
+                .append("            </div>")
+                .append("        </div>")
+                .append("        <div class='col-md-4'>")
+                .append("            <div class='card card-shadow bg-white p-3 h-100 d-flex flex-row align-items-center justify-content-between'>")
+                .append("                <div><h6 class='text-muted small mb-1'>Total Balance</h6><h3 class='fw-bold mb-0 text-dark'>₹").append(activeTotalBalance).append("</h3></div>")
+                .append("                <div class='text-secondary'><i class='bi bi-cash-stack fs-3'></i></div>")
                 .append("            </div>")
                 .append("        </div>")
                 .append("    </div>")
 
-                // Operator System Notice Note Card
+                // System Operator Note Card
                 .append("    <div class='card card-shadow bg-light border-start border-warning border-3 p-3 mb-4'>")
                 .append("        <div class='d-flex'>")
                 .append("            <div class='text-warning me-3'><i class='bi bi-journal-text fs-3'></i></div>")
                 .append("            <div>")
                 .append("                <h6 class='fw-bold text-dark mb-1'>SYSTEM POLICY NOTE FOR OPERATORS</h6>")
                 .append("                <p class='text-muted small mb-0'>")
-                .append("                    Attention Operator: When processing vehicle selections, the system calculates the <strong>Total Rent</strong> based on the formula: <em>Rent per day × Number of days</em>.<br>")
-                .append("                    Selecting <strong>'Rent Now'</strong> registers immediate settlement. Selecting <strong>'Pay Later'</strong> triggers a deferred billing model, requiring an upfront security deposit equivalent to <strong>10% of the total calculated rent</strong> added to liabilities.")
+                .append("                    Attention Operator: Selecting <strong>'Rent Now'</strong> registers immediate full-sum settlement. Selecting <strong>'Pay Later'</strong> triggers a deferred billing model where a deposit is 10% of rent and is charged directly to account liabilities upfront.")
                 .append("                </p>")
                 .append("            </div>")
                 .append("        </div>")
                 .append("    </div>")
 
-                // Main Fleet Table Module Registry
                 .append("    <div class='card card-shadow p-4 bg-white mb-5'>")
                 .append("        <h4 class='fw-bold mb-4 text-dark text-uppercase fs-5 letter-spacing'>Core Fleet Allocation Registry</h4>")
                 .append("        <div class='table-responsive'>")
@@ -253,7 +262,6 @@ public class RentalApp {
                 .append("                    <tr><th>ID</th><th>Vehicle Specifications</th><th>Base Tariff Rate</th><th>Status</th><th>Rental Duration</th><th>Current Renter</th><th class='text-end'>Available Directives</th></tr>")
                 .append("                </thead><tbody>");
 
-            // Loop rendering logic block
             for (Vehicle v : fleet) {
                 String badgeClass = v.status.equals("AVAILABLE") ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger";
                 String renterText = v.rentedByUserId.equals(currentUser.id) ? "You" : (v.rentedByUserId.equals("NONE") ? "N/A" : v.rentedByUserId);
@@ -272,7 +280,6 @@ public class RentalApp {
                     if (currentUser.dues > 0) {
                         html.append("                            <button class='btn btn-sm btn-secondary opacity-50 me-1' disabled><i class='bi bi-lock-fill me-1'></i> Locked</button>");
                     } else {
-                        // Dropdown selection loop: Iterates sequentially from 1 to 10 (covering both odd and even numbers)
                         html.append("                            <div class='d-inline-block me-2 align-middle'>")
                             .append("                                <select id='days-").append(v.id).append("' class='form-select form-select-sm' style='width: 95px;'>");
                         
